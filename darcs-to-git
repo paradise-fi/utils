@@ -46,7 +46,7 @@ rm -f git.marks darcs.marks
 if [[ $2 = '--push' ]]; then
     cd $GITDIR
     git checkout $MARKS
-    git push
+    git push --set-upstream origin $MARKS
     git checkout $GITBRANCH
-    git push
+    git push --set-upstream origin master
 fi
