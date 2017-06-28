@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+set -e
+GITBRANCH=master # sadly, no other banrch can be inported from darcs
+GITDIR=$1
+DARCSDIR=$PWD
+MARKS=${GITBRANCH}-darcsmarks
+
+test -z $GITDIR && echo "usage: $0 GITDIR [--push]" >&2
+
+rm -f git.marks darcs.marks
+
+if [[ ! -d $GITDIR/.git ]]; then
+    mkdir -p $GITDIR
+    git init $GITDIR
+    cd $GITDIR;
+    git checkout --orphan $MARKS
+    git reset --hard
+    touch {git,darcs}.marks
+    git stage {git,darcs}.marks
+    git commit -m "darcs: Initialize."
+    git checkout --orphan $GITBRANCH
+    git reset --hard
+    git branch
+    cd $DARCSDIR
+    touch git.marks
+else
+    (cd $GITDIR; git checkout $MARKS; cp darcs.marks git.marks $DARCSDIR; git checkout $GITBRANCH)
+fi
+
+darcs convert export --read-marks darcs.marks --write-marks darcs.marks \
+    | (cd $GITDIR && git fast-import --import-marks=$DARCSDIR/git.marks --export-marks=$DARCSDIR/git.marks)
+
+cd $GITDIR
+git reset --hard # import sometimes deletes some files in local copy
+git checkout $MARKS
+cp $DARCSDIR/{git,darcs}.marks .
+git stage {git,darcs}.marks
+git commit -m "darcs: Import newest revision." || true
+git checkout $GITBRANCH
+cd $DARCSDIR
+rm -f git.marks darcs.marks
+
+if [[ $2 = '--push' ]]; then
+    cd $GITDIR
+    git checkout $MARKS
+    git push
+    git checkout $GITBRANCH
+    git push
+fi
