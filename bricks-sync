@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+DARCS=$PWD/bricks-darcs
+GIT_RAW=$PWD/bricks-git-raw
+GIT=$PWD/bricks-git
+
+CODE=antea:/home/xstill/public_html/code
+DIVINE=http://divine.fi.muni.cz/current
+
+set -e
+
+test -d $DARCS || darcs get ${CODE}/bricks $DARCS
+test -d $GIT_RAW || git clone ${CODE}/bricks-raw.git $GIT_RAW
+test -d $GIT || git clone git@github.com:paradise-fi/bricks.git $GIT
+
+cd $DARCS
+darcs pull $DIVINE --match 'touch ^./bricks' --no-interactive
+darcs-to-git $GIT_RAW --push
+
+cd $GIT
+git remote | grep raw || git remote add raw $GIT_RAW
+git checkout master
+git pull
+git fetch raw
+git rebase master raw/master
+git branch --delete work || true
+git checkout -b work
+git checkout master
+git pull . work
+git push
