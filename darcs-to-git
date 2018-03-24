@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -e -o pipefail
 GITBRANCH=master # sadly, no other banrch can be inported from darcs
 GITDIR=$1
 DARCSDIR=$PWD
